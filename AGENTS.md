@@ -42,14 +42,30 @@ git push
   `GGML_BACKEND_DL=ON`、`GGML_NATIVE=OFF`、`GGML_CPU=ON`（server 需要
   CPU 後端，關掉會報 `no CPU backend found`）。
 - 完整 build（非單一 target）。artifact zip 含 `build\bin\Release` 的
-  全部 `.exe` 與 `.dll`（llama-cli / llama-server / ggml-rpc-server /
-  ggml-cuda.dll 等）。build 成功後自動發布到 Release
+  全部 `.exe` 與 `.dll`。必需產物：`llama-cli.exe`、`llama-server.exe`、
+  `ggml-rpc-server.exe`（`GGML_RPC=ON` 不可移除）、`ggml-cuda.dll`。
+  build 成功後自動發布到 Release
   `win-cuda-12.4-x64`（固定 tag，每次 build 覆蓋，Releases 頁面下載，
   永久保留）。run 頁面的 Artifacts 也會有（90 天後失效）。
 - 不編 ROCm/HIP。
 
 ## 維護注意事項
 
+- 只執行被明確要求的事，不要自行延伸（建額外管線、下載產物到
+  本地、建測試分支等）。要改動前先問。
+- Artifacts 與 Release 是兩套機制：Artifacts 是 run 專屬暫存
+  （90 天失效）；Release 永久保留，由 workflow 的
+  `softprops/action-gh-release` 步驟發布到固定 tag
+  `win-cuda-12.4-x64`（每次 build 覆蓋）。
+- 用 REST API（`/actions/artifacts/{id}/zip`）下載 artifact 會多一層
+  GitHub 自己的 zip 包裝；網頁 UI 下載沒有。
+- Actions 的 `GITHUB_TOKEN` 無法 push 含 `.github/workflows/` 變更的
+  commit（App token 沒有 workflows scope）；但本地 `gh` 的 user token
+  可以，所以手動改 workflow 檔案沒問題。
+- 曾嘗試每日自動同步管線，因 Actions runner 會劫持 git push 憑證
+  （checkout 設 URL-specific credential helper，優先於 askpass / URL
+  內嵌 token），且 fine-grained PAT 無法 push workflow 檔案，維護成本
+  過高已捨棄。同步一律手動。
 - 上游所有 push 觸發的 workflow 已在本 fork 全部停用
   （Settings -> Actions -> General），只剩 build-cuda-windows.yml，
   避免上游 push 事件跑一堆無關 CI。

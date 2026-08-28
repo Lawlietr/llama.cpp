@@ -1,9 +1,11 @@
 name: fork-windows-cuda
 
-# fork build config (workflow_dispatch only).
+# fork build config (manual dispatch + auto on master push, i.e. after upstream sync).
 # edit this file to change the build.
 on:
   workflow_dispatch:
+  push:
+    branches: [master]
 
 concurrency:
   group: fork-win-cuda

@@ -26,7 +26,8 @@ git push
 - `AGENTS.md`：rebase 衝突時保留 fork 版（rebase 時 `theirs` 才是
   fork commit 的版本）：`git checkout --theirs AGENTS.md`
 - `.github/workflows/build-cuda-windows.yml`：若上游修改了同名 workflow，
-  以上游版本為基礎重新套用 fork 的改動（僅 `workflow_dispatch` 觸發、
+  以上游版本為基礎重新套用 fork 的改動（`workflow_dispatch` + master
+  push 觸發、
   單一 CUDA 12.4 x64 matrix、移除 hip job、ccache key 前綴
   `fork-windows-2022-`）。
 - `.github/workflows/build-cann.yml`：delete/modify 衝突時直接
@@ -34,9 +35,10 @@ git push
 
 ## Build
 
-- 觸發：Actions 頁面，或
-  `gh workflow run build-cuda-windows.yml -R Lawlietr/llama.cpp`
-  （無 push 觸發，同步後不會自動編譯，手動觸發即可）。
+- 觸發：master 的 push 自動觸發（含本地同步、GitHub web 同步），
+  也可手動：Actions 頁面，或
+  `gh workflow run build-cuda-windows.yml -R Lawlietr/llama.cpp`。
+  注意：master 上任何 push 都會 build，實驗性 commit 先別直接 push 上去。
 - 設定：Windows x64, CUDA 12.4（`windows-2022` runner）。
   CMake: `GGML_CUDA=ON`、`GGML_CUDA_FA_ALL_QUANTS=ON`、`GGML_RPC=ON`、
   `GGML_BACKEND_DL=ON`、`GGML_NATIVE=OFF`、`GGML_CPU=ON`（server 需要

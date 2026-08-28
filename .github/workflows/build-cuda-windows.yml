@@ -73,6 +73,8 @@ jobs:
         run: |
           SHORT=$(git rev-parse --short=8 HEAD)
           echo "SHORT=$SHORT" >> $GITHUB_OUTPUT
+          DATE=$(date +%Y%m%d-%H%M)
+          echo "DATE=$DATE" >> $GITHUB_OUTPUT
 
       - name: Pack artifacts
         id: pack_artifacts
@@ -89,7 +91,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: win-cuda-${{ matrix.cuda }}-${{ matrix.arch }}
-          name: ${{ matrix.cuda }}-${{ matrix.arch }} (${{ steps.commit.outputs.SHORT }})
+          name: ${{ matrix.cuda }}-${{ matrix.arch }} (${{ steps.commit.outputs.SHORT }} ${{ steps.commit.outputs.DATE }})
           fail_on_unprotected_branch: false
           files: llama-bin-win-cuda-${{ matrix.cuda }}-${{ matrix.arch }}.zip
 

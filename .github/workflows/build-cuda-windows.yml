@@ -65,7 +65,13 @@ jobs:
             -DGGML_RPC=ON ^
             -DLLAMA_BUILD_BORINGSSL=ON ${{ matrix.defines }}
           set /A NINJA_JOBS=%NUMBER_OF_PROCESSORS%-1
-          cmake --build build --config Release -j %NINJA_JOBS%
+          cmake --build build --config Release -j %NINJA_JOBS% --target llama-cli llama-server llama-mtmd-cli llama-gguf-split ggml-rpc-server
+
+      - name: Get short commit hash
+        id: commit
+        shell: cmd
+        run: |
+          for /f %%i in ('git rev-parse --short=8 HEAD') do echo SHORT=%%i >> %GITHUB_OUTPUT%
 
       - name: Pack artifacts
         id: pack_artifacts
@@ -82,7 +88,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: win-cuda-${{ matrix.cuda }}-${{ matrix.arch }}
-          name: windows-cuda-${{ matrix.cuda }}-${{ matrix.arch }}
+          name: ${{ matrix.cuda }}-${{ matrix.arch }} (${{ steps.commit.outputs.SHORT }})
           fail_on_unprotected_branch: false
           files: llama-bin-win-cuda-${{ matrix.cuda }}-${{ matrix.arch }}.zip
 

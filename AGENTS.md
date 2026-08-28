@@ -39,10 +39,13 @@ git push
   （無 push 觸發，同步後不會自動編譯，手動觸發即可）。
 - 設定：Windows x64, CUDA 12.4（`windows-2022` runner）。
   CMake: `GGML_CUDA=ON`、`GGML_CUDA_FA_ALL_QUANTS=ON`、`GGML_RPC=ON`、
-  `GGML_BACKEND_DL=ON`、`GGML_NATIVE=OFF`、`GGML_CPU=OFF`。
+  `GGML_BACKEND_DL=ON`、`GGML_NATIVE=OFF`、`GGML_CPU=ON`（server 需要
+  CPU 後端，關掉會報 `no CPU backend found`）。
 - 完整 build（非單一 target）。artifact zip 含 `build\bin\Release` 的
   全部 `.exe` 與 `.dll`（llama-cli / llama-server / ggml-rpc-server /
-  ggml-cuda.dll 等），在 run 頁面下載，預設保留 90 天。
+  ggml-cuda.dll 等）。build 成功後自動發布到 Release
+  `win-cuda-12.4-x64`（固定 tag，每次 build 覆蓋，Releases 頁面下載，
+  永久保留）。run 頁面的 Artifacts 也會有（90 天後失效）。
 - 不編 ROCm/HIP。
 
 ## 維護注意事項

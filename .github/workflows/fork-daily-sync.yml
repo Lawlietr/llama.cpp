@@ -1,0 +1,101 @@
+name: fork-daily-sync
+
+# syncs fork master with upstream, regenerates the ci-win-cuda-faq build
+# branch from master, and optionally triggers the windows CUDA build.
+# 0 21 * * * (UTC) = 05:00 GMT+8
+#
+# pushing commits that touch .github/workflows/ is not possible with
+# GITHUB_TOKEN (the workflows scope does not exist for it). use the
+# FORK_SYNC_TOKEN secret instead: a classic PAT with the repo and
+# workflow scopes. (a fine-grained PAT cannot push workflow files: the
+# git-level check only accepts the classic workflow scope.)
+# pushes authenticate via GIT_ASKPASS on a clean remote URL: the
+# checkout action embeds GITHUB_TOKEN in the origin remote URL, and a
+# token in a URL takes precedence over askpass, so pushing to any URL
+# derived from origin would always use GITHUB_TOKEN.
+on:
+  schedule:
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+    inputs:
+      trigger_build:
+        description: Trigger the windows CUDA build after sync
+        type: boolean
+        default: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      FORK_SYNC_TOKEN: ${{ secrets.FORK_SYNC_TOKEN }}
+    steps:
+      - name: Clone
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # shared auth setup: askpass hands out FORK_SYNC_TOKEN, and the
+      # fork remote points at a URL without any embedded credential
+      - name: Setup fork auth
+        id: auth
+        run: |
+          set -e
+          if [ -z "$FORK_SYNC_TOKEN" ]; then
+            echo "::error::FORK_SYNC_TOKEN secret is not set"
+            exit 1
+          fi
+          printf '#!/bin/sh\nprintf "%%s\\n" "$FORK_SYNC_TOKEN"\n' > "$GITHUB_WORKSPACE/.askpass.sh"
+          chmod +x "$GITHUB_WORKSPACE/.askpass.sh"
+          echo "ASKPASS=$GITHUB_WORKSPACE/.askpass.sh" >> "$GITHUB_OUTPUT"
+
+      - name: Sync upstream into master
+        env:
+          GIT_ASKPASS: ${{ steps.auth.outputs.ASKPASS }}
+          GIT_TERMINAL_PROMPT: '0'
+        run: |
+          set -e
+          git config user.name "fork-daily-sync"
+          git config user.email "fork-daily-sync@users.noreply.github.com"
+          git remote add upstream https://github.com/ggml-org/llama.cpp
+          git remote add fork https://github.com/Lawlietr/llama.cpp
+          git fetch upstream master
+          if [ "$(git rev-parse master~1)" = "$(git rev-parse upstream/master)" ]; then
+            echo "master already in sync with upstream"
+          else
+            # replay the single fork-files commit on top of the new upstream
+            git rebase -X ours upstream/master
+            # mirror branch: history is rewritten daily, force push is expected
+            git -c credential.helper= push --force fork master
+          fi
+
+      - name: Regenerate build branch
+        env:
+          GIT_ASKPASS: ${{ steps.auth.outputs.ASKPASS }}
+          GIT_TERMINAL_PROMPT: '0'
+        run: |
+          set -e
+          git config user.name "fork-daily-sync"
+          git config user.email "fork-daily-sync@users.noreply.github.com"
+          git checkout -B ci-win-cuda-faq master
+          cp fork/build-cuda-windows.yml .github/workflows/build-cuda-windows.yml
+          git add .github/workflows/build-cuda-windows.yml
+          git commit --allow-empty -m "fork: build branch @ $(git rev-parse --short master)"
+          git -c credential.helper= push --force fork ci-win-cuda-faq
+
+      - name: Trigger build
+        if: ${{ inputs.trigger_build != false }}
+        env:
+          GH_TOKEN: ${{ secrets.FORK_SYNC_TOKEN }}
+        run: |
+          set +e
+          gh workflow run build-cuda-windows.yml --ref ci-win-cuda-faq
+          rc=$?
+          set -e
+          if [ $rc -ne 0 ]; then
+            # fallback: the fork's workflow index sometimes does not register workflows
+            curl -sf -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/build-cuda-windows.yml/dispatches" \
+              -d '{"ref":"ci-win-cuda-faq"}'
+          fi
+          sleep 10
+          gh run list --workflow build-cuda-windows.yml --branch ci-win-cuda-faq --limit 1

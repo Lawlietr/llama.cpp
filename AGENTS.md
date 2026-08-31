@@ -9,7 +9,7 @@
 - `master`：上游 master + 頂端一個 fork files commit。fork commit 內容：
   - 本檔案（取代上游 AGENTS.md）
   - `.github/workflows/build-cuda-windows.yml`（build 配置，僅 dispatch 觸發）
-  - 刪除 `.github/workflows/build-cann.yml`（昇騰 NPU，與本 fork 無關）
+  - 刪除所有上游 workflow（`.github/workflows/` 下只留 `build-cuda-windows.yml`）
 - 不要直接在此改源碼；要改 build 設定就改
   `.github/workflows/build-cuda-windows.yml`。
 
@@ -30,8 +30,8 @@ git push
   push 觸發、
   單一 CUDA 12.4 x64 matrix、移除 hip job、ccache key 前綴
   `fork-windows-2022-`）。
-- `.github/workflows/build-cann.yml`：delete/modify 衝突時直接
-  `git rm .github/workflows/build-cann.yml` 維持刪除。
+- 上游 workflow 檔案（`check-vendor.yml`、`docker.yml` 等）：delete/modify
+  衝突時直接 `git rm` 維持刪除。
 
 ## Build
 
@@ -68,8 +68,9 @@ git push
   （checkout 設 URL-specific credential helper，優先於 askpass / URL
   內嵌 token），且 fine-grained PAT 無法 push workflow 檔案，維護成本
   過高已捨棄。同步一律手動。
-- 上游所有 push 觸發的 workflow 已在本 fork 全部停用
-  （Settings -> Actions -> General），只剩 build-cuda-windows.yml，
-  避免上游 push 事件跑一堆無關 CI。
+- `.github/workflows/` 下只留 `build-cuda-windows.yml`，其他上游 workflow
+  已全部刪除（2025-08-31）。同步時若上游新增 workflow，需手動刪除，
+  避免 push 觸發一堆無關 CI（如 `check-vendor` 卡在 queued 找不到
+  self-hosted runner）。
 - GitHub Actions 偶爾大規模不穩定，run 失敗且無明顯原因時，先看
   githubstatus.com 再排查自己的設定。

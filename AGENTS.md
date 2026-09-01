@@ -8,7 +8,7 @@
 
 - `master`：上游 master + 頂端一個 fork files commit。fork commit 內容：
   - 本檔案（取代上游 AGENTS.md）
-  - `.github/workflows/build-cuda-windows.yml`（build 配置，僅 dispatch 觸發）
+  - `.github/workflows/build-cuda-windows.yml`（build 配置，dispatch + master push 觸發）
   - 刪除所有上游 workflow（`.github/workflows/` 下只留 `build-cuda-windows.yml`）
 - 不要直接在此改源碼；要改 build 設定就改
   `.github/workflows/build-cuda-windows.yml`。
@@ -47,7 +47,7 @@ git push
   全部 `.exe` 與 `.dll`。必需產物：`llama-cli.exe`、`llama-server.exe`、
   `ggml-rpc-server.exe`（`GGML_RPC=ON` 不可移除）、`ggml-cuda.dll`。
   build 成功後自動發布到 Release
-  `win-cuda-12.4-x64`（固定 tag，每次 build 覆蓋，Releases 頁面下載，
+  `win-cuda-12.4-x64-{SHORT}`（含 commit hash 的動態 tag，每次 build 覆蓋，Releases 頁面下載，
   永久保留）。run 頁面的 Artifacts 也會有（90 天後失效）。
 - 不編 ROCm/HIP。
 
@@ -57,8 +57,8 @@ git push
   本地、建測試分支等）。要改動前先問。
 - Artifacts 與 Release 是兩套機制：Artifacts 是 run 專屬暫存
   （90 天失效）；Release 永久保留，由 workflow 的
-  `softprops/action-gh-release` 步驟發布到固定 tag
-  `win-cuda-12.4-x64`（每次 build 覆蓋）。
+  `softprops/action-gh-release` 步驟發布到動態 tag
+  `win-cuda-12.4-x64-{SHORT}`（含 commit hash，每次 build 覆蓋）。
 - 用 REST API（`/actions/artifacts/{id}/zip`）下載 artifact 會多一層
   GitHub 自己的 zip 包裝；網頁 UI 下載沒有。
 - Actions 的 `GITHUB_TOKEN` 無法 push 含 `.github/workflows/` 變更的

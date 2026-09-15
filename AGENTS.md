@@ -15,6 +15,9 @@
 
 ## 手動同步上游
 
+sync 前先用 `ctx_search(queries=["fork sync 衝突解法"], source="llama.cpp-fork-sync")`
+撈實戰檢查清單（`.docs/sync-protocol.md`），避免重複推導。
+
 ```sh
 git fetch upstream
 git rebase upstream/master

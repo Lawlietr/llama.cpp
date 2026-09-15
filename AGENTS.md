@@ -33,6 +33,29 @@ git push
 - 上游 workflow 檔案（`check-vendor.yml`、`docker.yml` 等）：delete/modify
   衝突時直接 `git rm` 維持刪除。
 
+## 同步前預判（減少 rebase 衝突、避免重做檢查）
+
+- 上游通常**不改** `AGENTS.md` 與 `build-cuda-windows.yml`，rebase 可乾淨套
+  上（檔名與上游相同會並存，取 fork 版即可）。用
+  `git log  <fork點>..upstream/master -- AGENTS.md .github/workflows/build-cuda-windows.yml`
+  確認：空結果 = 不會衝突。
+- 上游在 fork 點後**沒新增** workflow，fork commit 的刪除清單可蓋到全部。
+  用 `git ls-tree` 比對 fork 點與 upstream 的 `.github/workflows/` 確認。
+- 預期唯一衝突：刪除 upstream workflow 的 delete/modify，直接 `git rm`。
+- rebase 前務必 `git branch backup/master-<date> master` 備份；push 需
+  `--force-with-lease`（rebase 改寫 history，非 fast-forward）。
+
+## 同步後必查（push 前逐項確認）
+
+1. `.github/workflows/` 下**只剩** `build-cuda-windows.yml`。若有上游 workflow
+   倖存（delete/modify 被 3-way merge 解成保留修改），`git rm` 後
+   `git rebase --continue`。
+2. `git merge-base --is-ancestor upstream/master master` 通過（上游已是 master
+   的 ancestor）。
+3. `build-cuda-windows.yml` 為 fork 版：單一 `cuda` job、無 `hip`、CUDA
+   12.4/x64 單一 matrix、`GGML_CPU=ON`。
+4. `AGENTS.md` 為 fork 版（首行 `# AGENTS.md (fork 專用...`）。
+
 ## Build
 
 - 觸發：master 的 push 自動觸發（含本地同步、GitHub web 同步），

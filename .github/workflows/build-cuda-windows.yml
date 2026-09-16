@@ -39,6 +39,10 @@ jobs:
         uses: ggml-org/ccache-action@v1.2.24
         with:
           key: fork-windows-2022-${{ matrix.arch }}-cuda-${{ matrix.cuda }}
+          # default 500MB caused LRU eviction mid-build -> hit rate churn (30-55%)
+          # -> build time variance 32min-2.5h. Full object cache is ~1GB; see
+          # .docs/build-notes.md (ccache cache strategy)
+          max-size: 4GB
 
       - name: Install Cuda Toolkit
         uses: ./.github/actions/windows-setup-cuda

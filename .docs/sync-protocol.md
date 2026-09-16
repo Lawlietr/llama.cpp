@@ -21,9 +21,11 @@ git ls-tree -r --name-only upstream/master -- .github/workflows/  # 現上游
 # 用 comm -13 比較，右列多出來 = 新增、需手動刪
 ```
 
-- 上游通常**不改** `AGENTS.md` 與 `build-cuda-windows.yml` → rebase 乾淨套上
-  （檔名與上游相同會並存，取 fork 版即可）。
-- 唯一預期衝突：刪除 upstream workflow 的 **delete/modify**，直接 `git rm`。
+- 上游通常**不改** `AGENTS.md`，但**會 bump** `build-cuda-windows.yml` 的 CUDA
+  版本（如 `0ecb159c9` bump 到 13.4.1）→ 該檔 content 衝突是預期的，保留 fork
+  版（fork 鎖 12.4）。
+- 預期衝突：(1) `build-cuda-windows.yml` content 衝突 → 保留 fork 版；
+  (2) 刪除 upstream workflow 的 **delete/modify**，直接 `git rm`。
 - **rebase 前務必備份**：`git branch backup/master-<date> master`。
 - push 需 `--force-with-lease`（rebase 改寫 history，非 fast-forward）。
 
@@ -71,3 +73,19 @@ git push origin master --force-with-lease
 - 結果：`.github/workflows/` 只剩 `build-cuda-windows.yml`；上游為 master
   ancestor；fork commits 完整保留在頂端。
 - 備份：`backup/master-pre-sync-20260214`。
+
+### 2026-09-16（sync to upstream 930e2fa59）
+
+- fork 點 `4c9233c03`。上游**未改** `AGENTS.md`；**改了**
+  `build-cuda-windows.yml`（`0ecb159c9` bump Windows CUDA build 到 13.4.1）；
+  **未新增** workflow。
+- rebase 停在 commit `dec21e3cf`（1/12）：`build-cuda-windows.yml` content
+  衝突 → `git checkout --theirs` 保留 fork 版（fork 鎖 12.4）。
+- rebase 停在 commit `23e649aeb`（5/12）：4 個 delete/modify 衝突 → `git rm`：
+  - `.github/workflows/build-cuda-ubuntu.yml`
+  - `.github/workflows/build-self-hosted.yml`
+  - `.github/workflows/release.yml`
+  - `.github/workflows/server-self-hosted.yml`
+- 同步後必查 4 項全過。備份：`backup/master-pre-sync-20260916`。
+- push `2baaff2e5`（`--force-with-lease`）；觸發的 run 只有 1 個
+  `fork-windows-cuda`。

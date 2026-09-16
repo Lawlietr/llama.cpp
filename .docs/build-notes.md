@@ -59,3 +59,10 @@
 - ccache 4.13.6 支援 http/redis remote storage（`secondary_storage`），
   可跨 repo/機器共享 cache；需自架服務。目前單機使用，本地 4GB＋
   actions/cache 已足夠。
+
+## 手動觸發注意事項
+
+- `gh workflow run`（workflow_dispatch）跑的是 **origin** 上 default branch
+  的 workflow 定義，不是本地工作副本。本地領先 origin 時（例如改了
+  workflow 還沒 push），先 push——push 本身就會自動觸發 build；直接
+  dispatch 只會測到舊配置。

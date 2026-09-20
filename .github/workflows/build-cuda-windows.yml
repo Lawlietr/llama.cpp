@@ -99,7 +99,3 @@ jobs:
           fail_on_unprotected_branch: false
           files: llama-bin-win-cuda-${{ matrix.cuda }}-${{ matrix.arch }}.zip
 
-      - name: ccache-clear
-        uses: ./.github/actions/ccache-clear
-        with:
-          key: fork-windows-2022-${{ matrix.arch }}-cuda-${{ matrix.cuda }}

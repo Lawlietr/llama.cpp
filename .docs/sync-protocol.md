@@ -7,18 +7,41 @@
 
 依使用者明確要求才做（「同步上游 / sync」）。不要自己觸發。
 
+## 同步前準備（rebase 前必做，省掉臨時補步驟）
+
+```sh
+# 0. 確認 upstream remote 存在（fork 必須指向 ggml-org/llama.cpp）
+#    若 repo 原本只設 origin，這裡才會失敗 → 補上
+git remote get-url upstream >/dev/null 2>&1 \
+  || git remote add upstream https://github.com/ggml-org/llama.cpp.git
+
+# fork 點 = origin/master 與 upstream/master 的 merge-base
+# 不要用 fork commit 當基點，否則預判會漏判。下文 <fork點> 都用這個
+FORK_BASE=$(git merge-base origin/master upstream/master)
+```
+
 ## 同步前預判（省掉重複的 git 檢查）
 
-rebase 前先用下面兩條確認，通常可乾淨通過：
+rebase 前先用下面三條確認，通常可乾淨通過：
 
 ```sh
 # 1. 上游有沒有改 AGENTS.md / build-cuda-windows.yml？（空 = 不會衝突）
 git log <fork點>..upstream/master -- AGENTS.md .github/workflows/build-cuda-windows.yml
 
 # 2. 上游有沒有「新增」workflow？（fork 刪除清單要蓋到全部）
-git ls-tree -r --name-only 093a2f86c -- .github/workflows/   # fork 點
+#    用動態 fork 點，不要硬編碼 093a2f86c
+git ls-tree -r --name-only <fork點> -- .github/workflows/    # fork 點
 git ls-tree -r --name-only upstream/master -- .github/workflows/  # 現上游
 # 用 comm -13 比較，右列多出來 = 新增、需手動刪
+
+# 3. fork 已刪、上游仍有的 workflow，若上游也改過 → rebase 會 modify/delete 衝突
+#    （需 git rm）。這是最容易漏判、也最花時間的一條，務必跑
+git ls-tree -r --name-only upstream/master -- .github/workflows/ | sort > /tmp/up_wf
+git ls-tree -r --name-only  origin/master  -- .github/workflows/ | sort > /tmp/for_wf
+comm -23 /tmp/up_wf /tmp/for_wf | while read f; do
+  git log "<fork點>..upstream/master" --format=%h -- "$f" | grep -q . \
+    && echo "WARN modify/delete 風險: $f （上游有改，rebase 需 git rm）"
+done
 ```
 
 - 上游通常**不改** `AGENTS.md`，但**會 bump** `build-cuda-windows.yml` 的 CUDA
@@ -46,6 +69,9 @@ git push origin master --force-with-lease
   無 hip、`GGML_CPU=ON`）。
 - 上游 workflow（`check-vendor.yml`、`docker.yml`、…）delete/modify →
   `git rm` 維持刪除。
+  - **modify/delete 衝突（`... deleted in <fork commit> and modified in HEAD`）是
+    預期內**，不是 unexpected：代表上游也改過這個 fork 要刪的 workflow。
+    直接 `git rm <檔>` 即可，不要當錯誤停下來排查。
 
 ## 同步後必查（push 前逐項）
 

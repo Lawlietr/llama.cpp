@@ -24,6 +24,8 @@
 - 詳細檢查清單與實戰記錄先
   `ctx_search(queries=["fork sync 衝突解法"], source="llama.cpp-fork-sync")`
   （`.docs/sync-protocol.md`），避免重複推導。
+- 先確認 `upstream` remote 存在（指向 `ggml-org/llama.cpp`），並算出 fork 點
+  = `git merge-base origin/master upstream/master`（不要手猜或用 fork commit）。
 - rebase 前務必備份：`git branch backup/master-<date> master`。
 - `git fetch upstream && GIT_EDITOR=true git rebase upstream/master`
 - 預期衝突：`build-cuda-windows.yml` content 衝突（上游 bump CUDA 版本）

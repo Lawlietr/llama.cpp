@@ -115,3 +115,29 @@ git push origin master --force-with-lease
 - 同步後必查 4 項全過。備份：`backup/master-pre-sync-20260916`。
 - push `2baaff2e5`（`--force-with-lease`）；觸發的 run 只有 1 個
   `fork-windows-cuda`。
+
+### 2026-10-09（sync to upstream de7fa0a3c）
+
+- fork 點 `9c2e0e491`，上游 24 commits。三條預判全綠：上游**未改** `AGENTS.md` /
+  `build-cuda-windows.yml`、**未新增** workflow、無 modify/delete 風險。
+- rebase 19 個 fork commits 一次通過，**零衝突**（歷來最乾淨的一次）。
+- 必查 4 項全過；`build-cuda-windows.yml` 與 `AGENTS.md`、`.docs/*` 的 blob 與同步前
+  逐一 `git rev-parse` 比對，全部 `SAME`。
+- push `9d61fadd2`（`--force-with-lease`）。備份：`backup/master-pre-sync-20261009`。
+- **踩雷：push 沒有產生 run。** 排查順序與結論：
+  1. `git ls-remote` / repo `pushed_at` 有更新 → push 確實送達 GitHub。
+  2. `actions/runs?status=queued|in_progress` = 0；新 sha 的 `check-runs total=0`
+     → 不是「run 失敗」，是**根本沒建立 run**。
+  3. `actions/permissions` 回 `enabled:true`（這是 allowed_actions policy，
+     **不代表** Actions 可用）；`gh workflow run` → **HTTP 422
+     "Actions has been disabled for this repository"**。
+  4. githubstatus.com 全部 operational → 不是平台故障。
+  5. 正解：Actions 頁面旗標（匿名也看得到）
+     *"Workflows aren't being run on this fork because of its GitHub Actions
+     usage. A repository maintainer can re-enable them."*
+     → GitHub 因 usage 自動**暫停 fork 的 workflows**，需在 Actions 頁面點
+     re-enable 手動恢復；`PUT /actions/workflows/{id}/enable` 與
+     `DELETE /actions/workflows/{id}` 在此狀態下都會 404 / 無效，API 解不了。
+- 教訓：**push 後務必確認 run 真的存在**（`runs?per_page=1` 的 `head_sha` 要對得上），
+  不要只看 push 成功。近期 build 常達 1–2 小時（#47/#49/#51 皆 >1h），
+  容易觸發這種 usage-based 暫停。

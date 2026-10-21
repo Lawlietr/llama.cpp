@@ -116,6 +116,20 @@ git push origin master --force-with-lease
 - push `2baaff2e5`（`--force-with-lease`）；觸發的 run 只有 1 個
   `fork-windows-cuda`。
 
+### 2026-10-21（sync to upstream 8baabd53b）
+
+- fork 點 `4a45de4f2`，上游 11 commits。三條預判全綠：上游**未改** `AGENTS.md` /
+  `build-cuda-windows.yml`、**未新增** workflow、無 modify/delete 風險。
+- rebase 21 個 fork commits 一次通過，**零衝突**。
+- 必查 4 項全過；`.github/workflows/` 只剩 `build-cuda-windows.yml`（單一 `cuda` job、
+  CUDA 12.4/x64、`GGML_CPU=ON`），`AGENTS.md` 為 fork 版。
+- push `741dc22dc`（`--force-with-lease`）。備份：`backup/master-pre-sync-20261021`。
+- run #63 `fork-windows-cuda` 針對新 sha `741dc22` **in_progress**（build 正常觸發）。
+- **注意 `gh` 預設 repo**：`gh repo view` 回 `ggml-org/llama.cpp`（auth context 指向上游），
+  所以 `gh run list` 沒加 `-R` 時會抓到上游的 run（`CI (sycl)`、`Server`、`CI (wasi)`…，
+  headSha 為上游 commit），`-c <fork sha>` 也抓不到自己的 run。**查自己 fork 的 run 一定要
+  加 `-R Lawlietr/llama.cpp`**。
+
 ### 2026-10-09（sync to upstream de7fa0a3c）
 
 - fork 點 `9c2e0e491`，上游 24 commits。三條預判全綠：上游**未改** `AGENTS.md` /

@@ -116,6 +116,61 @@ git push origin master --force-with-lease
 - push `2baaff2e5`（`--force-with-lease`）；觸發的 run 只有 1 個
   `fork-windows-cuda`。
 
+### 2026-10-25（sync to upstream 7790a9231）
+
+- fork 點 `36e36e63a`（上次 sync 點），上游 40 commits。三條預判：上游**未改**
+  `AGENTS.md` / `build-cuda-windows.yml`、**未新增** workflow；第 3 條預警 7 個
+  fork 已刪、上游也改過的 workflow modify/delete 風險。
+- rebase 停在 commit `692e38bec`（刪除 upstream workflows，8/23）：3 個
+  modify/delete 衝突 → `git rm`：
+  - `.github/workflows/build-apple.yml`
+  - `.github/workflows/build-cmake-pkg.yml`
+  - `.github/workflows/build-sanitize.yml`
+- rebase 停在 commit `a96efd911`（sync: remove upstream ci-self-hosted workflows，
+  17/23）：4 個 modify/delete 衝突 → `git rm`：
+  - `.github/workflows/ci-self-hosted-cpu.yml`
+  - `.github/workflows/ci-self-hosted-metal.yml`
+  - `.github/workflows/ci-self-hosted-vulkan.yml`
+  - `.github/workflows/ci-self-hosted-webgpu.yml`
+- 其後 6 個 fork commits 一次通過。rebase 完成後 `.github/workflows/` 只剩
+  `build-cuda-windows.yml`（fork 的刪除 commit 蓋到了所有新增/既有 upstream workflow）。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`；`upstream/master` 為
+  ancestor；`build-cuda-windows.yml` / `AGENTS.md` 與同步前 blob identical（fork
+  修改完整保留）。workflow 內容：單一 `cuda` job、matrix `include` 僅 `cuda: '12.4'`
+  + `arch: x64`、無 hip/rocm、`GGML_CPU=ON`。
+- push `d35ca6105`（`--force-with-lease`）。備份：`backup/master-pre-sync-20261025`。
+- run `fork-windows-cuda` in_progress（headSha `d35ca6105`），**jobs 只有一個**
+  `windows-cuda (12.4, x64)` → 符合「actions 只有一個編譯工作」。
+
+### 2026-10-24（sync to upstream 36e36e63a）
+
+- fork 點 `8baabd53b`，上游 55 commits，fork 端 22 commits。預判：上游**未改**
+  `AGENTS.md` / `build-cuda-windows.yml`；**新增** workflow `.github/workflows/
+  behavior-check.yml`（`f00c9083b` ci : add behavior check workflow #31036，同一個
+  commit 也改了 `build-cpu.yml`）→ 第 3 條預判如實預警 `build-cpu.yml` 的
+  modify/delete 風險。
+- rebase 停在 commit `0c70c61aa`（刪除 upstream workflows，8/22）：**唯一衝突**
+  = `.github/workflows/build-cpu.yml` UD（modify/delete）→ `git rm` 維持刪除，
+  其後 14 個 fork commits 一次通過。
+- rebase 完成後 `.github/workflows/` 出現 `behavior-check.yml`（上游在 fork 點之後
+  新增，fork 的刪除 commit 蓋不到）→ 另補一個刪除 commit
+  `sync: remove upstream behavior-check.yml (added after fork base)`。**這是常態
+  步驟，不是踩雷**：每逢上游新增 workflow 就要補這一刀。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`；`upstream/master` 為
+  ancestor；`build-cuda-windows.yml` / `AGENTS.md` / `.docs/*` 與同步前 blob 逐一
+  比對為 identical（`git diff --stat backup/... master -- <those paths>` 空輸出）。
+  workflow 內容再確認：單一 `cuda` job、matrix `include` 僅 `cuda: '12.4'` + `arch: x64`、
+  無 hip/rocm、`-DGGML_CPU=ON`。
+- push `bf2946f7b`（`--force-with-lease`，23 個 fork commits 在上游之上）。
+  備份：`backup/master-pre-sync-20261024`。
+- run #64 `fork-windows-cuda` in_progress，headSha `bf2946f7b`，**jobs 只有一個**
+  `windows-cuda (12.4, x64)` → 符合「actions 只有一個編譯工作」。
+- `gh workflow list -R Lawlietr/llama.cpp` 會顯示第二筆
+  `.github/workflows/pat-classic-wf-test.yml`（id 344535503，state active）：這是
+  2026-08-28 測 PAT 權限时留下的**孤兒註冊**，該路徑不在 master tree（`git ls-tree`
+  查無），最後兩筆 run 發生在 `_pat_classic_test` 分支且 0s 失敗，之後從未再跑。
+  → 不會觸發額外 build，不必處理（要清乾淨只能在 Actions UI 裡停用/移除註冊）。
+
 ### 2026-10-21（sync to upstream 8baabd53b）
 
 - fork 點 `4a45de4f2`，上游 11 commits。三條預判全綠：上游**未改** `AGENTS.md` /

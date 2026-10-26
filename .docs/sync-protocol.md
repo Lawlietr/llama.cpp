@@ -116,6 +116,17 @@ git push origin master --force-with-lease
 - push `2baaff2e5`（`--force-with-lease`）；觸發的 run 只有 1 個
   `fork-windows-cuda`。
 
+### 2026-10-26（sync to upstream d854d98ba）
+
+- fork 點 `7790a9231`（上次 sync 點），上游 9 commits。三條預判：上游**未改**
+  `AGENTS.md` / `build-cuda-windows.yml`、**未新增** workflow、**未改** workflow
+  → 預判全綠，無 workflow delete/modify 風險。
+- rebase 24/24 一次通過，無衝突。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`；`upstream/master` 為
+  ancestor；`build-cuda-windows.yml` / `AGENTS.md` 與同步前 blob identical（fork
+  修改完整保留）。jobs 下僅單一 `cuda` job → 符合「actions 只有一個編譯工作」。
+- push `c25dafb46`（`--force-with-lease`）。備份：`backup/master-pre-sync-20261026`。
+
 ### 2026-10-25（sync to upstream 7790a9231）
 
 - fork 點 `36e36e63a`（上次 sync 點），上游 40 commits。三條預判：上游**未改**

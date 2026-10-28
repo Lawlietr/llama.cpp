@@ -85,6 +85,23 @@ git push origin master --force-with-lease
 
 ## 實戰記錄（past sync log）
 
+### 2026-10-28（sync to upstream 8ca4060b7）
+
+- fork 點 `7aca0d2ea`（上次 sync 點），上游 33 commits（`1a97e387d`…`8ca4060b7`）。
+  三條預判：上游**未改** `AGENTS.md` / `build-cuda-windows.yml`、**未新增** workflow、
+  第 3 條預警 2 個 fork 已刪、上游也改過的 workflow modify/delete 風險。
+- rebase 停在 commit `42268b6e0`（刪除 upstream workflows，7/26）：1 個 modify/delete
+  衝突 → `git rm .github/workflows/release.yml`，其後刪除多個 upstream workflow 的 commit
+  一次通過。
+- rebase 停在 commit `aaf9dd28b`（sync: remove upstream ci-self-hosted workflows，18/26）：
+  1 個 modify/delete 衝突 → `git rm .github/workflows/ci-self-hosted-webgpu.yml` 維持刪除，
+  其後 fork commits 一次通過。
+- rebase 完成後 `.github/workflows/` 只剩 `build-cuda-windows.yml`（fork 的刪除 commit
+  蓋到了所有新增/既有 upstream workflow，含上游在 fork 點之後新增的 behavior-check.yml）。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`；`upstream/master` 為 ancestor；
+  `build-cuda-windows.yml` / `AGENTS.md` 與同步前 blob identical（`git diff --stat backup/... master -- <those paths>` 空輸出）。workflow 內容：單一 `cuda` job、matrix `include` 僅 `cuda: '12.4'` + `arch: x64`、無 hip/rocm、`GGML_CPU=ON`。
+- push（`--force-with-lease`）。備份：`backup/master-pre-sync-20261028`。
+
 ### 2026-02-14（sync to upstream 4c9233c03）
 
 - fork 點 `093a2f86c`。上游自 fork 點後**未改** `AGENTS.md` /

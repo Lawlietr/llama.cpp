@@ -85,6 +85,29 @@ git push origin master --force-with-lease
 
 ## 實戰記錄（past sync log）
 
+### 2026-10-29（sync to upstream 2e0d86beb）
+
+- fork 點 `8ca4060b7`（上次 sync 點），上游 30 commits（`6886628cb`…`2e0d86beb`），
+  fork 端 27 commits。三條預判：上游**未改** `AGENTS.md` / `build-cuda-windows.yml`、
+  **未新增** workflow；第三條預警命中 —— 上游 `ff0d396e3`（ci s390x Ubuntu 26.04）
+  改了 3 個 fork 已刪的 workflow（`build-ibm.yml`、`release.yml`、`release-publish.yml`）。
+- rebase 停在 `81e6113ac`（7/27）：2 個 modify/delete 衝突 → `git rm
+  .github/workflows/build-ibm.yml .github/workflows/release.yml`。
+- rebase 停在 `3765ad2a7`（19/27）：1 個 modify/delete 衝突 →
+  `git rm .github/workflows/release-publish.yml`（注意同一 commit 也改 `AGENTS.md` /
+  `.docs/sync-protocol.md`，`git rm` 只處理 workflow 那一個路徑，其餘照原樣帶上）。
+  其後 commits 一次通過。
+- 上游本版有 `llama.cpp : bump version to 0.8.0`（`8642541b2`）與 `ggml : bump v.28.0`
+  （`ec941ee85`），不影響 build 配置。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`；`upstream/master` 為 ancestor；
+  `build-cuda-windows.yml` / `AGENTS.md` / `.docs/*` 與同步前 `git diff --stat` 空輸出
+  （blob identical）；workflow 內容：單一 `cuda` job、matrix 僅 `cuda: '12.4'` + `arch: x64`、
+  無 hip/rocm、`GGML_CPU=ON`（`ggml/CMakeLists.txt:189` 仍是 option）。
+- 額外檢查：workflow 用到的 6 個 CMake 開關（`GGML_BACKEND_DL`/`GGML_NATIVE`/`GGML_CPU`/
+  `GGML_CUDA`/`GGML_CUDA_FA_ALL_QUANTS`/`GGML_RPC`）在上游新版 `ggml/CMakeLists.txt` 全存在，
+  未改名 → 不需調 flag。
+- push（`--force-with-lease`）。備份：`backup/master-pre-sync-20261029`。
+
 ### 2026-10-28（sync to upstream 8ca4060b7）
 
 - fork 點 `7aca0d2ea`（上次 sync 點），上游 33 commits（`1a97e387d`…`8ca4060b7`）。

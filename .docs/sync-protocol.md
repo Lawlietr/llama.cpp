@@ -108,6 +108,15 @@ git push origin master --force-with-lease
   未改名 → 不需調 flag。
 - push（`--force-with-lease`）。備份：`backup/master-pre-sync-20261029`。
 
+### 2026-10-29（sync to upstream 3c809f443）
+
+- fork 點 `2e0d86bebc`（上次 sync 點），上游 28 commits（`7ac5727d6`…`3c809f443`）。
+  三條预判：上游**未改** `AGENTS.md` / `build-cuda-windows.yml`（`git log $FORK_BASE..upstream/master -- <path>` 空）、**新增** 多個 workflow（ai-issues.yml、bench.yml.disabled、build-cuda-ubuntu.yml 等，fork 刪除 commit 蓋不到 → rebase 後需 `git rm`）、第 3 條預警 fork 已刪 workflow 的 modify/delete 風險。
+- rebase 停在 commit `b64b9a3f6`（sync: remove upstream behavior-check.yml）：1 個 modify/delete 衝突 → `git rm .github/workflows/behavior-check.yml` 維持刪除，其後 fork commits 一次通過。
+- rebase 完成後 `.github/workflows/` 只剩 `build-cuda-windows.yml`（fork 的刪除 commit 蓋到了所有新增/既有 upstream workflow）。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`；`upstream/master` 為 ancestor；`build-cuda-windows.yml` / `AGENTS.md` 與同步前 blob identical（fork 修改完整保留）。workflow 內容：單一 `cuda` job、matrix `include` 僅 `cuda: '12.4'` + `arch: x64`、無 hip/rocm、`GGML_CPU=ON`。
+- push `9da4f334d`（`--force-with-lease`）。備份：`backup/master-pre-sync-20261029-fresh`。
+
 ### 2026-10-28（sync to upstream 8ca4060b7）
 
 - fork 點 `7aca0d2ea`（上次 sync 點），上游 33 commits（`1a97e387d`…`8ca4060b7`）。

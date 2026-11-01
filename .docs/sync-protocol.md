@@ -85,6 +85,36 @@ git push origin master --force-with-lease
 
 ## 實戰記錄（past sync log）
 
+### 2026-11-01（sync to upstream a91eab67d）
+
+- fork 點 `3c809f443`（上次 sync 點），上游 26 commits（`e0f142d5d`…`a91eab67d`），
+  fork 端 29 commits。三條預判：上游**未改** `AGENTS.md` / `build-cuda-windows.yml` /
+  `.docs/`（第一條空輸出）；**新增** 1 個 workflow（`build-apple-daily.yml`，來自
+  `e216f4ec8` ci : extract most apple jobs into daily workflow）→ rebase 後手動 `git rm`；
+  第三條預警命中 3 個 modify/delete 風險（`behavior-check.yml`、`build-apple.yml`、
+  `build-apple-daily.yml`）。
+- rebase 停在 `678a7394a`（Remove upstream workflows）：1 個 modify/delete 衝突
+  → `git rm .github/workflows/build-apple.yml`。
+- rebase 停在 `d8ae149fb`（23/29，remove behavior-check.yml）：1 個 modify/delete 衝突
+  → `git rm .github/workflows/behavior-check.yml`。其後一次通過。
+- **教訓**：解衝突後要用 `git rebase --continue`，**不要**再跑一次 `git rebase
+  upstream/master`。迴圈裡誤跑 40 次；結果只是重複對同一個 commit 做 3-way merge
+  （`msgnum` 沒前進、`git rm` 的暫存刪除被保留），沒有破壞 history，檢查
+  `.git/rebase-merge/msgnum`/`end` 與 `HEAD` 就能確認。改寫成外層只跑一次 rebase、
+  之後一律 `--continue`。
+- 上游本版含 `cmake : embed an app manifest in all Windows exes`（`d63fbfe79`）與
+  `common : drop the Windows argv reconstruction`（`aa588a346`），都是 Windows 相關但
+  不影響 build 配置。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`（`build-apple-daily.yml` 已刪）；
+  `upstream/master` 為 ancestor；`build-cuda-windows.yml` / `AGENTS.md` / `.docs/*` 與同步前
+  `git diff --stat` 空輸出（fork 修改完整保留）；workflow 內容：單一 `cuda` job、matrix
+  `include` 僅 `cuda: '12.4'` + `arch: x64`、無 hip/rocm、`GGML_CPU=ON`
+  （`ggml/CMakeLists.txt:189`）。
+- 額外檢查：workflow 用到的 6 個 CMake 開關（`GGML_BACKEND_DL`/`GGML_NATIVE`/`GGML_CPU`/
+  `GGML_CUDA`/`GGML_CUDA_FA_ALL_QUANTS`/`GGML_RPC`）在上游新版 `ggml/CMakeLists.txt`
+  全存在未改名 → 不需調 flag。
+- push（`--force-with-lease`）。備份：`backup/master-pre-sync-20261101`。
+
 ### 2026-10-29（sync to upstream 2e0d86beb）
 
 - fork 點 `8ca4060b7`（上次 sync 點），上游 30 commits（`6886628cb`…`2e0d86beb`），

@@ -85,6 +85,18 @@ git push origin master --force-with-lease
 
 ## 實戰記錄（past sync log）
 
+### 2026-11-01（sync to upstream 785322d17）
+
+- fork 點 `a91eab67d`（上次 sync 點），上游 3 commits（`a91eab67d`…`785322d17`）。
+  三條预判：上游**未改** `AGENTS.md` / `build-cuda-windows.yml`、**未新增** workflow、
+  無 modify/delete 風險。全部命中 —— rebase 一次通過（31/31），無衝突。
+- 三個 upstream commit 只碰 `ggml/src/ggml-hexagon`、`ggml/src/ggml-sycl/CMakeLists.txt`、
+  `requirements/*.txt`，均與 fork 修改無關。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`；`upstream/master` 為 ancestor；
+  `build-cuda-windows.yml` / `AGENTS.md` 與同步前 blob identical。workflow 內容：單一 `cuda` job、
+  matrix 僅 `cuda: '12.4'` + `arch: x64`、無 hip/rocm、`GGML_CPU=ON`。
+- push `94cf780ae`（`--force-with-lease`）。備份：`backup/master-pre-sync-20261101-fresh`。
+
 ### 2026-11-01（sync to upstream a91eab67d）
 
 - fork 點 `3c809f443`（上次 sync 點），上游 26 commits（`e0f142d5d`…`a91eab67d`），

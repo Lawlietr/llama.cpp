@@ -85,6 +85,22 @@ git push origin master --force-with-lease
 
 ## 實戰記錄（past sync log）
 
+### 2026-11-04（sync to upstream 149f5641b）
+
+- fork 點 `2cbca389f`（上次 sync 點），上游 35 commits（至 `149f5641b`，tags 到 b12090）。
+  三條預判：上游**未改** `AGENTS.md` / `build-cuda-windows.yml` / `.docs/`（pre-check
+  `git diff --stat` 空輸出）、**未改**任何既有 workflow（無 modify/delete 風險）、
+  但**新增** 1 個 workflow `pr-video-demo-label.yml`（pre-check `--name-status` 唯一的 `A`）。
+- rebase 33/33 一次通過，零衝突（本輪 fork commits 少、上游未碰重疊檔案）。
+- 新增的上游 workflow 於 rebase 後 `git rm`，補一個 commit
+  `sync: remove upstream pr-video-demo-label.yml (added after fork base)`。
+- 上游本版無版本 bump（`bump version` grep 無命中），不影響 build 配置。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`；`upstream/master` 為 ancestor；
+  `build-cuda-windows.yml` / `AGENTS.md` / `.docs/*` 與同步前 `git diff --stat` 空輸出；
+  workflow 內容：單一 `cuda` job、matrix 僅 `cuda: '12.4'` + `arch: x64`、無 hip/rocm、
+  `GGML_CPU=ON`。6 個 CMake 開關在 `ggml/CMakeLists.txt` 全存在。
+- push（`--force-with-lease`）。備份：`backup/master-pre-sync-20261104`。
+
 ### 2026-11-03（sync to upstream 2cbca389f）
 
 - fork 點 `785322d17`（上次 sync 點），上游 30 commits（`1c5ed702c`…`2cbca389f`）。

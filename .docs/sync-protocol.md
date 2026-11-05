@@ -84,6 +84,34 @@ git push origin master --force-with-lease
 4. `AGENTS.md` 為 fork 版（首行 `# AGENTS.md (fork 專用...`）。
 
 ## 實戰記錄（past sync log）
+### 2026-11-05（sync to upstream 5ce06fc71）
+- fork 點 `149f5641b`（上次 sync 點，tag `b12098`），上游 24 commits 至 `5ce06fc71`（tag `b12122`，range 內 15 個 tag）。
+  上游 tip 是 `CUDA: fuse NVFP4 gate/up matmuls and GLU in MMQ (#31296)`。
+- 三條預判：上游**未改** `AGENTS.md` / `build-cuda-windows.yml` / `.docs/`；**未新增** workflow（兩邊都 63 個，
+  `comm -13` 空輸出）；但上游**改過 3 個 fork 已刪的 workflow** → 預判 modify/delete：`build-cmake-pkg.yml`、
+  `build-sanitize.yml`、`ci-self-hosted-cpu.yml`。rebase 實際就是這 3 處，沒有額外衝突。
+- rebase 35 個 fork commits：停在 `711e79c58`（`Remove upstream workflows, keep only build-cuda-windows.yml`）解 2 檔，
+  停在 `2121a2447` 解 1 檔，其餘一次通過。全部 `git rm`（維持刪除）。
+- **本次操作失誤（記錄以免重犯）**：解完衝突後，我在 shell 迴圈裡重複叫 `git rebase upstream/master`，
+  而不是 `git rebase --continue`。git 只印 `rm -fr .git/rebase-merge and run me again` 後退出、**不做任何事**，
+  迴圈空轉 11 輪；repo 停在衝突中途（HEAD detached 在 `ca6940f0b`，也就是尚未套用「刪 workflow」那個 commit 的位置），
+  沒有任何損害，改用 `git rebase --continue` 就接回去了。
+  正確寫法：先判斷 `.git/rebase-merge` 或 `.git/rebase-apply` 是否存在，存在就只叫 `git rebase --continue`，
+  絕不再叫 `git rebase <branch>`。
+- 上游本版**有 version bump**：llama.cpp `0.9.0`（`cd959bae9`）、ggml `0.29.0`（`cca14f64f`；`ggml/CMakeLists.txt`
+  本版唯一改動是 `GGML_VERSION_MINOR 28 -> 29`）→ 不影響 build 配置，CUDA 照舊鎖 12.4。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`（1 個檔）；`upstream/master` 為 ancestor；
+  `build-cuda-windows.yml` / `AGENTS.md` / `.docs/*` 與同步前 `git diff --stat` 空輸出；workflow 內容為單一 `cuda` job、
+  matrix 僅 `cuda: '12.4'` + `arch: x64`、`hip|rocm` 0 命中、`-DGGML_CPU=ON` 在第 66 行。
+  整體規模：111 files changed, 5269 insertions(+), 938 deletions(-)。
+- 產物驗證方式更正：`Pack artifacts` 是 `7z a ... build\bin\Release\*.exe build\bin\Release\*.dll`，
+  `ggml-cuda.dll` 靠 glob 進 zip，**不會**在 workflow 以檔名出現 → 用「workflow 裡有沒有那個檔名」驗產物會誤判。
+- 開關查證：`LLAMA_BUILD_BORINGSSL` 定義在 `vendor/cpp-httplib/CMakeLists.txt`（不在 `ggml/CMakeLists.txt`），
+  只 grep ggml 那邊會誤判成不存在；上次同步點與現在都是 25 處，未變。
+- **待決（未改）**：`matrix.defines` 的 `-DGGML_CUDA_CUB_3DOT2=ON` 在上游 `149f5641b` 與 `5ce06fc71` 都 **0 處**命中，
+  也就是它是死參數（CMake 只會 warn unused），上次同步時也已经是死的。要清它得動 workflow 檔，需用明確要求。
+- push `--force-with-lease`。備份：`backup/master-pre-sync-20261105`（`f9ae2f8e1`）。
+
 
 ### 2026-11-04（sync to upstream 149f5641b）
 

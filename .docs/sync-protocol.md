@@ -47,6 +47,9 @@ done
 - 上游通常**不改** `AGENTS.md`，但**會 bump** `build-cuda-windows.yml` 的 CUDA
   版本（如 `0ecb159c9` bump 到 13.4.1）→ 該檔 content 衝突是預期的，保留 fork
   版（fork 鎖 12.4）。
+- 上游的 `build-cuda-windows.yml` 對 matrix 每一列都帶 `defines: '-DGGML_CUDA_CCCL_VERSION=v3.4.3'`
+  （上游 matrix 是 12.4/x64、13.4/x64、13.4/arm64）。**不跟**：fork 只有 12.4/x64 一列且不釘 CCCL 版本，
+  用 CUDA Toolkit 自帶的 CCCL（決定與實證見 `.docs/build-notes.md`）。解衝突時不要把上游的 `defines:` 行帶回來。
 - 預期衝突：(1) `build-cuda-windows.yml` content 衝突 → 保留 fork 版；
   (2) 刪除 upstream workflow 的 **delete/modify**，直接 `git rm`。
 - **rebase 前務必備份**：`git branch backup/master-<date> master`。
@@ -108,8 +111,11 @@ git push origin master --force-with-lease
   `ggml-cuda.dll` 靠 glob 進 zip，**不會**在 workflow 以檔名出現 → 用「workflow 裡有沒有那個檔名」驗產物會誤判。
 - 開關查證：`LLAMA_BUILD_BORINGSSL` 定義在 `vendor/cpp-httplib/CMakeLists.txt`（不在 `ggml/CMakeLists.txt`），
   只 grep ggml 那邊會誤判成不存在；上次同步點與現在都是 25 處，未變。
-- **待決（未改）**：`matrix.defines` 的 `-DGGML_CUDA_CUB_3DOT2=ON` 在上游 `149f5641b` 與 `5ce06fc71` 都 **0 處**命中，
-  也就是它是死參數（CMake 只會 warn unused），上次同步時也已经是死的。要清它得動 workflow 檔，需用明確要求。
+- 已移除的死參數：`matrix.defines` 的 `-DGGML_CUDA_CUB_3DOT2=ON`（連同 CMake 行的 `${{ matrix.defines }}`）。
+  這個名字在上游 `149f5641b` 與 `5ce06fc71` 都 0 處命中，是上游 `767767850`（2026-10-01，
+  `CUDA: Make CCCL configurable + pin it to 3.4.3 for CI jobs`）改名後的殘留，我們是從 fork 時的舊上游
+  workflow 抄來的。移除後行為不變：那個 commit 在上次同步點之前就在，而 11-04 那次成功的 build 本來就沒釘 CCCL。
+  上游的替代品與我們的決定見 `.docs/build-notes.md`。
 - push `--force-with-lease`。備份：`backup/master-pre-sync-20261105`（`f9ae2f8e1`）。
 
 

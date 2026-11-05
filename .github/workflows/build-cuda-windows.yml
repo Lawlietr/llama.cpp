@@ -28,7 +28,6 @@ jobs:
         include:
           - cuda: '12.4'
             arch: x64
-            defines: '-DGGML_CUDA_CUB_3DOT2=ON'
 
     steps:
       - name: Clone
@@ -67,7 +66,7 @@ jobs:
             -DGGML_CUDA=ON ^
             -DGGML_CUDA_FA_ALL_QUANTS=ON ^
             -DGGML_RPC=ON ^
-            -DLLAMA_BUILD_BORINGSSL=ON ${{ matrix.defines }}
+            -DLLAMA_BUILD_BORINGSSL=ON
           set /A NINJA_JOBS=%NUMBER_OF_PROCESSORS%-1
           cmake --build build --config Release -j %NINJA_JOBS% --target llama-cli llama-server llama-mtmd-cli llama-gguf-split ggml-rpc-server
 

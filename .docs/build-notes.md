@@ -60,6 +60,24 @@
   可跨 repo/機器共享 cache；需自架服務。目前單機使用，本地 4GB＋
   actions/cache 已足夠。
 
+## CUDA 的 CCCL 版本：我們不釘版本（2026-11-05 決定）
+
+- 上游從 `767767850`（2026-10-01，`CUDA: Make CCCL configurable + pin it to 3.4.3 for CI jobs`）開始有
+  `GGML_CUDA_CCCL_VERSION`（`ggml/CMakeLists.txt` 的 `CACHE STRING`）。值是 CCCL 的 git tag；
+  **留空代表用安裝的 CUDA Toolkit 自帶的 CCCL**。指定時 `ggml/src/ggml-cuda/CMakeLists.txt` 會用
+  FetchContent 從 GitHub 抓該 tag 並 `target_link_libraries(ggml-cuda PRIVATE CCCL::CCCL)`。
+- 上游 CI 對每一列 matrix 都釘 `-DGGML_CUDA_CCCL_VERSION=v3.4.3`，註解是
+  「CTK >= 13.5 bundles CCCL >= 3.5; omit GGML_CUDA_CCCL_VERSION for those versions」。
+  上游的 matrix 是 12.4/x64、13.4/x64、13.4/arm64。
+- **fork 的決定：不釘。** 我們的 workflow 沒有 `GGML_CUDA_CCCL_VERSION`，也就是走 CUDA 12.4 自帶的 CCCL。
+  實證：該開關問世（2026-10-01）之後的每次 sync 與 build 都成功，包括 2026-11-04 那次完整 build。
+- 若哪天 CUDA 12.4 自帶的 CCCL 編不過（例如上游開始用只有新版才有的 CCCL API）：在 matrix 那列加回
+  `defines: '-DGGML_CUDA_CCCL_VERSION=v3.4.3'`，並在 cmake 行末帶上 `${{ matrix.defines }}`。
+  這會讓 configure 階段多一次抓 CCCL 的網路動作（runner 連 GitHub）。
+- 舊名 `GGML_CUDA_CUB_3DOT2` 是上面那個 commit 改名前的寫法，上游現在已經不用（`149f5641b` 與
+  `5ce06fc71` 都 0 處命中）。它留在我們 workflow 裡只是 CMake 的 unused variable 警告，
+  2026-11-05 已從 workflow 移除。
+
 ## 手動觸發注意事項
 
 - `gh workflow run`（workflow_dispatch）跑的是 **origin** 上 default branch

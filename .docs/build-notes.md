@@ -15,7 +15,8 @@
   （`/actions/artifacts/{id}/zip`）下載會多一層 GitHub 自己的 zip 包裝；
   網頁 UI 下載沒有。
 - Release：永久保留。由 workflow 的 `softprops/action-gh-release` 步驟發布到
-  動態 tag `win-cuda-12.4-x64-{SHORT}`（含 commit hash，每次 build 覆蓋）。
+  動態 tag `win-cuda-<CUDA>-x64-{SHORT}`（tag 名自帶 matrix 的 CUDA 版號，現值 13.5；
+  含 commit hash，每次 build 覆蓋）。
 
 ## 為何同步一律手動（決策記錄）
 
@@ -53,6 +54,9 @@
   應達 90%+，預期 < 15 min。
 - 觀察方式：job 的 `CCache Statistics` summary（Hits/Misses %）與
   `Post ccache` step 的 `Cache size (GB)`（不應再接近上限）。
+- 換 CUDA series（12.4 → 13.5，2026-11-06）會換掉 ccache key
+  （`fork-windows-2022-x64-cuda-<version>`）→ 新 series 的第一顆是冷 cache
+  （落在 32 min–2.5 h 那個範圍的慢那端），第二顆起才回到 90%+ 命中率。
 
 ### 進階選項（未做）
 
@@ -66,14 +70,16 @@
   `GGML_CUDA_CCCL_VERSION`（`ggml/CMakeLists.txt` 的 `CACHE STRING`）。值是 CCCL 的 git tag；
   **留空代表用安裝的 CUDA Toolkit 自帶的 CCCL**。指定時 `ggml/src/ggml-cuda/CMakeLists.txt` 會用
   FetchContent 從 GitHub 抓該 tag 並 `target_link_libraries(ggml-cuda PRIVATE CCCL::CCCL)`。
-- 上游 CI 對每一列 matrix 都釘 `-DGGML_CUDA_CCCL_VERSION=v3.4.3`，註解是
-  「CTK >= 13.5 bundles CCCL >= 3.5; omit GGML_CUDA_CCCL_VERSION for those versions」。
-  上游的 matrix 是 12.4/x64、13.4/x64、13.4/arm64。
-- **fork 的決定：不釘。** 我們的 workflow 沒有 `GGML_CUDA_CCCL_VERSION`，也就是走 CUDA 12.4 自帶的 CCCL。
-  實證：該開關問世（2026-10-01）之後的每次 sync 與 build 都成功，包括 2026-11-04 那次完整 build。
-- 若哪天 CUDA 12.4 自帶的 CCCL 編不過（例如上游開始用只有新版才有的 CCCL API）：在 matrix 那列加回
-  `defines: '-DGGML_CUDA_CCCL_VERSION=v3.4.3'`，並在 cmake 行末帶上 `${{ matrix.defines }}`。
-  這會讓 configure 階段多一次抓 CCCL 的網路動作（runner 連 GitHub）。
+- 上游 CI 對 12.4 那列釘 `-DGGML_CUDA_CCCL_VERSION=v3.4.3`，對 13.5 那列**不釘**（`defines: ''`），
+  註解是「CTK >= 13.5 bundles CCCL >= 3.5; omit GGML_CUDA_CCCL_VERSION for those versions」。
+  上游 matrix 現值：12.4/x64、13.5/x64、13.5/arm64。
+- **fork 的決定：不釘。** workflow 沒有 `GGML_CUDA_CCCL_VERSION` → 用裝好的 CUDA Toolkit 自帶的 CCCL。
+  走 13.5 之後這跟上游 13.5 那列**完全同款**（上游也用自帶的 CCCL 3.5），不再是上游不測的組合。
+- 實證：該開關問世（2026-10-01）之後的每次 sync 與 build 都成功，包括 2026-11-04、2026-11-05
+  兩次完整 build（那兩次仍是 CUDA 12.4 + 自帶 CCCL，也就是上游不測的組合；曾需要
+  `GGML_CUDA_CUB_3DOT2` 那類湊合，已在 `3119f6daa` 移除）。
+- 真的要釘某個 CCCL tag：在 matrix 那列加 `defines: '-DGGML_CUDA_CCCL_VERSION=<tag>'`，
+  並在 cmake 行末帶上 `${{ matrix.defines }}`（現在的 cmake 行不插這個變數）。
 - 舊名 `GGML_CUDA_CUB_3DOT2` 是上面那個 commit 改名前的寫法，上游現在已經不用（`149f5641b` 與
   `5ce06fc71` 都 0 處命中）。它留在我們 workflow 裡只是 CMake 的 unused variable 警告，
   2026-11-05 已從 workflow 移除。

@@ -29,19 +29,26 @@
 - rebase 前務必備份：`git branch backup/master-<date> master`。
 - `git fetch upstream && GIT_EDITOR=true git rebase upstream/master`
 - 預期衝突：`build-cuda-windows.yml` content 衝突（上游 bump CUDA 版本）
-  → 保留 fork 版（`git checkout --theirs`）；上游 workflow delete/modify → `git rm`。
+  → 保留 fork 版（`git checkout --theirs`）＝留 fork 的單列 `x64` 結構、**版號採上游那列**；
+  上游 workflow delete/modify → `git rm`。
 - 同步後必查 4 項（見 sync-protocol.md）再
   `git push origin master --force-with-lease`（rebase 改寫 history，必須）。
 
 ## Build 不變量
 
-- Windows x64、CUDA 12.4 鎖版（上游 bump 不跟）、不編 ROCm/HIP。
+- Windows x64、CUDA 只用 **13.x series**：matrix 單列，版號跟上游 `build-cuda-windows.yml`
+  的 x64 那列（現值 **13.5**）。12.4 自 2026-11-06 起停用（三張卡 sm_75＋sm_86 與三組驅動
+  r580 以上都在 CUDA 13 支援範圍；查證見 llama-swap_config 的 `doc/llama-cpp.md`）。
+- 上游若把版號帶到新的**大版**（例如 14.x）：**先查該版 release notes 的架構支援／移除列**，
+  確認 sm_75（RTX 2070）與 sm_86（RTX 3080 / 3080 Ti）仍在支援範圍才准跟；被移除就中斷並問使用者。
+- 不編 ROCm/HIP。
 - 完整 build（非單一 target）。必需產物：`llama-cli.exe`、`llama-server.exe`、
   `ggml-rpc-server.exe`、`ggml-cuda.dll`。
 - `GGML_CPU=ON` 必要（server 需要 CPU 後端，關掉會報
   `no CPU backend found`）。
-- 成功自動發布 Release `win-cuda-12.4-x64-{SHORT}`（含 commit hash 的動態 tag，
-  每次 build 覆蓋，永久保留）。
+- 成功自動發布 Release `win-cuda-<CUDA>-x64-{SHORT}`（tag 名自帶 matrix 的 CUDA 版號，
+  現值 `win-cuda-13.5-x64-{SHORT}`；含 commit hash，每次 build 覆蓋，永久保留）。
+  舊的 12.4 tag 不會消失，最後一顆是 `win-cuda-12.4-x64-cb845058`（2026-11-05）→ 要退有錨點。
 - 手動觸發：`gh workflow run build-cuda-windows.yml -R Lawlietr/llama.cpp`。
 - 配置細節以 workflow 檔為準，本檔不複製 flag 清單。
 

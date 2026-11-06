@@ -87,6 +87,23 @@ git push origin master --force-with-lease
 4. `AGENTS.md` 為 fork 版（首行 `# AGENTS.md (fork 專用...`）。
 
 ## 實戰記錄（past sync log）
+### 2026-11-06（sync to upstream 3ed7284f2）
+
+- fork 點 `5ce06fc71`（上次 sync 點，tag `b12122`），上游 47 commits 至 `3ed7284f2`（tag `b12169`，range 內 34 個 tag）。
+  上游 tip 是 `ci : bump CUDA 13 release builds to 13.5 (#31788)`。
+- 三條預判：上游**未改** `AGENTS.md` / `.docs/`、**未新增** workflow（`comm -13` 空輸出），
+  但**改過 5 個 fork 已刪的 workflow** → 預判 modify/delete：`build-cpu.yml`、`docker.yml`、
+  `models-check.yml`、`release-publish.yml`、`release.yml`。`build-cuda-windows.yml` 有 version bump
+  （13.x matrix 改 13.5）→ content 衝突預期，保留 fork 版（鎖 12.4）。
+- rebase 37 個 fork commits：`build-cuda-windows.yml` content 衝突保留 fork 版；5 個 modify/delete
+  全部 `git rm`（維持刪除）。一次迴圈 `git rm` 未合併檔案後 `git rebase --continue` 接完，無額外衝突。
+- 上游本版**無版本 bump**（`bump version` / `GGML_VERSION` grep 無命中），不影響 build 配置。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`（1 個檔）；`upstream/master` 為 ancestor；
+  `build-cuda-windows.yml` 單一 matrix 僅 `cuda: '12.4'` + `arch: x64`、`hip|rocm` 0 命中、
+  `-DGGML_CPU=ON` 在第 65 行；`AGENTS.md` 為 fork 版。`AGENTS.md` / `.docs/*` 與同步前 `git diff --stat` 空輸出。
+- push `3119f6daa`（`--force-with-lease`）。備份：`backup/master-pre-sync-20261106`（`cb8450583`）。
+- Actions run 正常觸發（run `42194342918`，head_sha 對得上新 HEAD，`in_progress`）。
+
 ### 2026-11-05（sync to upstream 5ce06fc71）
 - fork 點 `149f5641b`（上次 sync 點，tag `b12098`），上游 24 commits 至 `5ce06fc71`（tag `b12122`，range 內 15 個 tag）。
   上游 tip 是 `CUDA: fuse NVFP4 gate/up matmuls and GLU in MMQ (#31296)`。

@@ -45,11 +45,12 @@ done
 ```
 
 - 上游通常**不改** `AGENTS.md`，但**會 bump** `build-cuda-windows.yml` 的 CUDA
-  版本（如 `0ecb159c9` bump 到 13.4.1）→ 該檔 content 衝突是預期的，保留 fork
-  版（fork 鎖 12.4）。
-- 上游的 `build-cuda-windows.yml` 對 matrix 每一列都帶 `defines: '-DGGML_CUDA_CCCL_VERSION=v3.4.3'`
-  （上游 matrix 是 12.4/x64、13.4/x64、13.4/arm64）。**不跟**：fork 只有 12.4/x64 一列且不釘 CCCL 版本，
-  用 CUDA Toolkit 自帶的 CCCL（決定與實證見 `.docs/build-notes.md`）。解衝突時不要把上游的 `defines:` 行帶回來。
+  版本（如 `0ecb159c9` bump 到 13.4.1、`3ed7284f2` bump 到 13.5）→ 該檔 content 衝突是
+  預期的，保留 fork 版＝留 fork 的單列 `x64` 結構、**版號採上游那列**（現值 13.5）。
+- 上游的 `build-cuda-windows.yml` 對 12.4 那列帶 `defines: '-DGGML_CUDA_CCCL_VERSION=v3.4.3'`，
+  13.5 那列是 `defines: ''`（上游 matrix 現值 12.4/x64、13.5/x64、13.5/arm64）。
+  **不跟**：fork 只留 13.5/x64 一列、不釘 CCCL 版本（跟上游 13.5 那列同款；決定與實證見
+  `.docs/build-notes.md`）。解衝突時不要把上游的 `defines:` 行與 12.4／arm64 兩列帶回來。
 - 預期衝突：(1) `build-cuda-windows.yml` content 衝突 → 保留 fork 版；
   (2) 刪除 upstream workflow 的 **delete/modify**，直接 `git rm`。
 - **rebase 前務必備份**：`git branch backup/master-<date> master`。
@@ -68,8 +69,8 @@ git push origin master --force-with-lease
 
 - `AGENTS.md` 衝突 → 保留 fork 版：`git checkout --theirs AGENTS.md`
   （rebase 時 `theirs` 才是 fork commit 版本）。
-- `build-cuda-windows.yml` 衝突 → 保留 fork 版（單一 cuda job、CUDA 12.4/x64、
-  無 hip、`GGML_CPU=ON`）。
+- `build-cuda-windows.yml` 衝突 → 保留 fork 版（單一 cuda job、單列 `cuda: '13.5'` +
+  `arch: x64`、無 hip、`GGML_CPU=ON`）；CUDA 版號跟上游那列。
 - 上游 workflow（`check-vendor.yml`、`docker.yml`、…）delete/modify →
   `git rm` 維持刪除。
   - **modify/delete 衝突（`... deleted in <fork commit> and modified in HEAD`）是
@@ -82,8 +83,10 @@ git push origin master --force-with-lease
    倖存（delete/modify 被 3-way merge 解成保留修改），`git rm` 後
    `git rebase --continue`。
 2. `git merge-base --is-ancestor upstream/master master` 通過。
-3. `build-cuda-windows.yml` 為 fork 版：單一 `cuda` job、無 `hip`、CUDA 12.4/x64
-   單一 matrix、`GGML_CPU=ON`。
+3. `build-cuda-windows.yml` 為 fork 版：單一 `cuda` job、無 `hip`、`matrix.include` 只有一列
+   （`cuda` = 上游那列的版號、現值 `13.5`；`arch: x64`）、`GGML_CPU=ON`。
+   ⚠ 上游把版號帶到新的**大版**（14.x）時，先查該版 release notes 的架構支援／移除列，
+   確認 sm_75（RTX 2070）與 sm_86（RTX 3080 / 3080 Ti）仍支援才准跟；否則中斷並問使用者。
 4. `AGENTS.md` 為 fork 版（首行 `# AGENTS.md (fork 專用...`）。
 
 ## 實戰記錄（past sync log）

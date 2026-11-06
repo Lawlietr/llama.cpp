@@ -26,7 +26,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - cuda: '12.4'
+          - cuda: '13.5'
             arch: x64
 
     steps:

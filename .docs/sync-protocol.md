@@ -109,6 +109,13 @@ git push origin master --force-with-lease
   `AGENTS.md` 為 fork 版。`AGENTS.md` / `.docs/` / `build-cuda-windows.yml` 與同步前 `git diff --stat` 空輸出。
 - 上游 matrix 現值仍是 12.4/x64、13.5/x64、13.5/arm64（無 14.x）→ 不需查 CUDA 架構支援中斷條件。
 - 備份：`backup/master-pre-sync-20261107`（`842a49bee`）。
+- **push 後無 build run**：查因非本檔／非衝突 —— 倉庫層 Actions 已被 GitHub 停用
+  （dispatch 回 HTTP 422 `Actions has been disabled for this repository`，commit 上 check-runs = 0）。
+  最可能原因是免費_plan Windows 分鐘額度打爆：11-01～11-06 實際跑 954 min，Windows runner 計價 ×2
+  → 1,907 charged min，逼近 Free plan 2,000 min/月上限（每次 sync 一顆 2～3.3h 的 build，
+  加上 workflow_dispatch 重跑，一週就用完）。处置見 `.docs/build-notes.md`（Actions 停用一节）。
+- 顺手：停用孤兒 workflow `pat-classic-wf-test.yml`（id 344535503，來源是 2026-08-28 已刪除的
+  `_pat_classic_test` branch 殘留註冊）→ Actions 列表只剩 `fork-windows-cuda` 一顆。
 
 ### 2026-11-06（sync to upstream 3ed7284f2）
 

@@ -90,3 +90,20 @@
   的 workflow 定義，不是本地工作副本。本地領先 origin 時（例如改了
   workflow 還沒 push），先 push——push 本身就會自動觸發 build；直接
   dispatch 只會測到舊配置。
+
+## Actions 停用（2026-11-07 發現，處置中）
+
+- 癥狀：push 到 master 後完全沒有 run（commit 上 check-runs = 0）；
+  `gh workflow run` 回 HTTP 422 `Actions has been disabled for this repository`。
+  這是**倉庫層 Actions 被整個停用**，不是 workflow 層問題。
+- 最可能原因：免費 plan 的 Windows 分鐘額度打爆 → GitHub 自動停用。
+  Windows runner 計價為實際分鐘 ×2；每次 sync 一顆 build 約 2～3.3 小時（＝ 240～400 charged min），
+  2026-11-01～06 已用 1,907 charged min（Free plan 上限 2,000/月）。
+- 確認與解開（需瀏覽器，gh CLI 看不到停用原因）：
+  1. 收 GitHub 寄的 "Actions disabled" 通知信；
+  2. github.com/Lawlietr/llama.cpp/actions 頁頂橫幅有 re-enable 連結；
+  3. github.com/settings/billing → Actions spending limit：拉高限額（按量計費）
+     或確認額度後 re-enable。限額沒拉高之前，每次打爆都會再被停用。
+- 省分鐘的方向（未做，要動再問）：減少多餘的 workflow_dispatch 重跑；
+  同一天多次 push 只留最後一顆（concurrency 目前 `queue`+`max` 不會取消舊 run，
+  改 `cancel-in-progress` 有half-built 風險，改前要先想清楚）。

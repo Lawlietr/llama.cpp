@@ -43,6 +43,9 @@ comm -23 /tmp/up_wf /tmp/for_wf | while read f; do
     && echo "WARN modify/delete 風險: $f （上游有改，rebase 需 git rm）"
 done
 ```
+- ⚠ 跑第 3 條前先確認上面兩行 `> /tmp/up_wf`、`> /tmp/for_wf` 真的在**同一段 script** 裡執行過：
+  `comm` 找不到檔案時只會報錯、迴圈空轉，不會報出任何 WARN → modify/delete 全數漏判
+  （2026-11-07 踩過，見下方實戰記錄）。
 
 - 上游通常**不改** `AGENTS.md`，但**會 bump** `build-cuda-windows.yml` 的 CUDA
   版本（如 `0ecb159c9` bump 到 13.4.1、`3ed7284f2` bump 到 13.5）→ 該檔 content 衝突是
@@ -90,6 +93,23 @@ git push origin master --force-with-lease
 4. `AGENTS.md` 為 fork 版（首行 `# AGENTS.md (fork 專用...`）。
 
 ## 實戰記錄（past sync log）
+### 2026-11-07（sync to upstream f7591a6a0）
+- fork 點 `3ed7284f2`（上次 sync 點，tag `b12169`），上游 21 commits 至 `f7591a6a0`（tag `b12190`，range 內 21 個 tag）。
+  上游 tip 是 `sycl: add f16 support for SWIGLU_OAI (#30857)`。
+- 預判：上游**未改** `AGENTS.md` / `build-cuda-windows.yml` / `.docs/`、**未新增** workflow（`comm -13` 空輸出）、
+  無 version bump。**第 3 條（modify/delete）執行的時候漏判**：script 只建立 `/tmp/base_wf` 與 `/tmp/up_wf`，
+  迴圈卻叫 `/tmp/for_wf`（本檔範例的變數名）；`comm` 找不到檔而失敗、stdin 空、迴圈空轉 → 全部預判為「無風險」。
+  這是**執行失誤不是協議缺陷**：跑第 3 條前務必確認 `/tmp/for_wf` 真的被建立（或統一改用 `/tmp/base_wf`，
+  fork 的 workflows 清單就是 `build-cuda-windows.yml` 一個檔）。
+- rebase 39 個 fork commits：停在 `444ae91fd`，唯一衝突 = `ci-self-hosted-cpu.yml` modify/delete
+  （上游 `9a1d03c7c tests : override hardware_concurrency in CI (#31797)` 改過）→ `git rm` 維持刪除，
+  `git rebase --continue` 一次接完（18/39→39/39），無額外衝突。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`（1 個檔）；`upstream/master` 為 ancestor；
+  `build-cuda-windows.yml` 單一 matrix 僅 `cuda: '13.5'` + `arch: x64`、`hip|rocm` 0 命中、`-DGGML_CPU=ON` 在第 65 行；
+  `AGENTS.md` 為 fork 版。`AGENTS.md` / `.docs/` / `build-cuda-windows.yml` 與同步前 `git diff --stat` 空輸出。
+- 上游 matrix 現值仍是 12.4/x64、13.5/x64、13.5/arm64（無 14.x）→ 不需查 CUDA 架構支援中斷條件。
+- 備份：`backup/master-pre-sync-20261107`（`842a49bee`）。
+
 ### 2026-11-06（sync to upstream 3ed7284f2）
 
 - fork 點 `5ce06fc71`（上次 sync 點，tag `b12122`），上游 47 commits 至 `3ed7284f2`（tag `b12169`，range 內 34 個 tag）。

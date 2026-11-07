@@ -32,6 +32,14 @@
 
 ## ccache cache 策略（2026-09-16 build 時間差異調查＋修復）
 
+> 補充（2026-11-07，CUDA 13.5 首顆）：清單上 3h18m 不是編譯變慢——Build 步驟
+> 123 min（13.5）vs 129 min（12.4），13.5 反而略快（CUDA 13 不再編 sm_50–70 舊架構）。
+> 多出來的是 73 min 排隊：手動 dispatch 的 run（同 `fork-win-cuda` 群組，queue+max 不互取消）
+> 佔到 10:30 才退場，加上 GitHub windows-2022 runner 側約 64 min 派工等待。
+> 另：換 CUDA 版號會换掉 ccache key（含 `cuda-<ver>`），首顆是冷 cache，但只 123 min
+> → 冷 cache 懲罰很小，版號切換無需特殊處理。queue 時間查法：
+> `GET /actions/runs/{id}` 的 `run_started_at` 對 jobs 的 `started_at` 相減。
+
 ### 調查
 
 - 每次 build 都是全新 runner 上完整編譯 ~692 個 object；ccache 是唯一

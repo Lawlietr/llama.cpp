@@ -93,6 +93,24 @@ git push origin master --force-with-lease
 4. `AGENTS.md` 為 fork 版（首行 `# AGENTS.md (fork 專用...`）。
 
 ## 實戰記錄（past sync log）
+### 2026-11-21（sync to upstream 7476e4726）
+- fork 點 `f7591a6a0`（上次 sync 點），上游 411 commits 至 `7476e4726`（tag `b12600`）。
+  上游 tip 是 `docs: openvino backend details, fix SYCL docs (#30967)`。
+- 三條預判：上游**未改** `AGENTS.md` / `build-cuda-windows.yml` / `.docs/`；**新增** 4 個 workflow
+  （`server-speculative.yml`、`ui-chat-publish.yml`、`ui-lib-publish.yml`、`ui-storybook.yml`）；
+  **40 個** fork 已刪的 workflow 被上游改過 → modify/delete 風險（實際 rebase 全數命中）。
+- rebase 42 個 fork commits：停在 6 個「刪上游 workflow」commit（`f39b24e19`、`5cd8ace66`、
+  `a55d471ad`、`922c11ace`、`4d5685266` 等），共 36 個 modify/delete 全部 `git rm` 維持刪除，
+  其餘一次接完，無 content 衝突。
+- 新增的 4 個上游 workflow 於 rebase 後 `git rm`，補一個 commit
+  `sync: remove upstream ui/server workflows (added after fork base)`。
+- 必查 4 項全過：workflows 只剩 `build-cuda-windows.yml`（1 個檔）；`upstream/master` 為 ancestor；
+  workflow 為 fork 版（單一 `cuda` job、matrix 僅 `cuda: '13.5'` + `arch: x64`、`hip|rocm` 0 命中、
+  `GGML_CPU=ON` 在第 65 行、`concurrency.group: fork-win-cuda` + `queue: max` 確保同時只有一個 build）；
+  `AGENTS.md` 為 fork 版。`AGENTS.md` / `build-cuda-windows.yml` 與同步前 `git diff --stat` 空輸出。
+- 上游 CUDA 仍是 13.5（matrix 12.4/x64、13.5/x64、13.5/arm64），無 14.x → 不需查架構支援中斷條件。
+- 備份：`backup/master-pre-sync-20261121`（`e11e10f5f`）。
+
 ### 2026-11-07（sync to upstream f7591a6a0）
 - fork 點 `3ed7284f2`（上次 sync 點，tag `b12169`），上游 21 commits 至 `f7591a6a0`（tag `b12190`，range 內 21 個 tag）。
   上游 tip 是 `sycl: add f16 support for SWIGLU_OAI (#30857)`。
